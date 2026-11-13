@@ -53,12 +53,13 @@ func _ready() -> void:
 	sm.material = _mat
 	mi.mesh = sm
 	add_child(mi)
-	_light = OmniLight3D.new()
-	_light.light_color = Color(1, 0.95, 0.85)
-	_light.light_energy = 0.6
-	_light.omni_range = 2.0
-	add_child(_light)
-	if game and game.get("fx"):
+	if Game.quality() >= 2:
+		_light = OmniLight3D.new()
+		_light.light_color = Color(1, 0.95, 0.85)
+		_light.light_energy = 0.6
+		_light.omni_range = 2.0
+		add_child(_light)
+	if game and game.get("fx") and Game.quality() >= 1:
 		_trail = game.fx.make_trail(self, Color(1, 1, 1), Vector3.ZERO, 0.5, 60, 0.35)
 	body_entered.connect(_on_body_entered)
 
@@ -73,7 +74,8 @@ func _process(_delta: float) -> void:
 
 func set_glow(g: float) -> void:
 	_mat.set_shader_parameter("glow", g)
-	_light.light_energy = 0.6 + g * 4.0
+	if _light:
+		_light.light_energy = 0.6 + g * 4.0
 
 
 func _on_body_entered(b: Node) -> void:

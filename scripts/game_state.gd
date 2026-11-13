@@ -88,6 +88,8 @@ var settings := {
 	"difficulty": 1,          # 0 easy, 1 normal, 2 hard
 	"team_size": 3,
 	"shake": true,
+	"quality": 2,             # 0 low, 1 medium, 2 high (browser starts on low)
+	"show_fps": false,
 }
 
 # -------------------------------------------------------------- save data
@@ -108,9 +110,13 @@ var last_result := {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	if OS.has_feature("web"):
+		settings["quality"] = 0
 	_setup_input()
 	load_game()
+	settings["quality"] = int(settings["quality"])
 	apply_volume()
+	apply_quality()
 
 
 # ------------------------------------------------------------------ input
@@ -150,6 +156,7 @@ func _setup_input() -> void:
 	_add_action("pause", [KEY_ESCAPE, KEY_P], [JOY_BUTTON_START])
 	_add_action("skip", [KEY_ENTER, KEY_SPACE], [JOY_BUTTON_A, JOY_BUTTON_B])
 	_add_action("help", [KEY_F1], [])
+	_add_action("fps", [KEY_F3], [])
 
 
 # ------------------------------------------------------------- save/load
@@ -180,6 +187,21 @@ func load_game() -> void:
 	settings["team_size"] = int(settings["team_size"])
 	save["coins"] = int(save["coins"])
 	save["build"]["paint"] = int(save["build"]["paint"])
+
+
+## Low = fewest lights, no shadows, smaller crowd, 75% render scale, 60 Hz physics.
+func quality() -> int:
+	return int(settings["quality"])
+
+
+func apply_quality() -> void:
+	var q := quality()
+	Engine.physics_ticks_per_second = 120 if q >= 2 else 60
+	Engine.max_physics_steps_per_frame = 4
+	var vp := get_viewport()
+	if vp:
+		vp.scaling_3d_scale = 0.75 if q == 0 else 1.0
+		vp.msaa_3d = Viewport.MSAA_2X if q >= 2 and not OS.has_feature("web") else Viewport.MSAA_DISABLED
 
 
 func apply_volume() -> void:

@@ -33,12 +33,13 @@ class Bumper extends StaticBody3D:
 		Mk.cyl(self, 0.5, 0.56, 0.75, Vector3(0, 0.55, 0), _glow)
 		Mk.cyl(self, 0.64, 0.64, 0.12, Vector3(0, 0.98, 0), Mk.mat(Color(1, 1, 1), 2.0, 0.0, 0.2))
 		_ring = Mk.cyl(self, 0.75, 0.75, 0.04, Vector3(0, 0.35, 0), Mk.mat(col, 3.0))
-		var light := OmniLight3D.new()
-		light.light_color = col
-		light.light_energy = 1.2
-		light.omni_range = 3.0
-		light.position = Vector3(0, 1.3, 0)
-		add_child(light)
+		if Game.quality() >= 2:
+			var light := OmniLight3D.new()
+			light.light_color = col
+			light.light_energy = 1.2
+			light.omni_range = 3.0
+			light.position = Vector3(0, 1.3, 0)
+			add_child(light)
 		var ash := CylinderShape3D.new()
 		ash.radius = 0.85
 		ash.height = 1.6

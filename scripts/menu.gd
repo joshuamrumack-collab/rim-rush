@@ -45,6 +45,7 @@ func on_pinball(_k, _p, _b) -> void:
 func _ready() -> void:
 	get_tree().paused = false
 	Engine.time_scale = 1.0
+	Game.apply_quality()
 	fx = Fx.new()
 	add_child(fx)
 	arena = Arena.new()
@@ -551,19 +552,19 @@ func _garage_info() -> void:
 func _settings() -> void:
 	_clear()
 	_heading("Settings")
-	for key in ["one_hand", "auto_switch", "shapes", "reduce_flash", "shake", "chase_cam", "game_speed", "assist", "volume", "difficulty", "team_size"]:
+	for key in ["quality", "show_fps", "one_hand", "auto_switch", "shapes", "reduce_flash", "shake", "chase_cam", "game_speed", "assist", "volume", "difficulty", "team_size"]:
 		_cycler(_setting_label.bind(key), _setting_change.bind(key))
 	_btn("Back", func():
 		Game.save_game()
 		_main())
 	var pc := PanelContainer.new()
 	side.add_child(pc)
-	var l := UiTheme.label("One-hand mode: the left stick points where to go,\nA (or K) spins you toward the ball.\n\nGame speed slows the whole match down.\nAim assist nudges your hard hits toward goal.\n\nLeft / right changes a setting.", 18, Color(1, 1, 1, 0.8))
+	var l := UiTheme.label("One-hand mode: the left stick points where to go,\nA (or K) spins you toward the ball.\n\nGame speed slows the whole match down.\nAim assist nudges your hard hits toward goal.\n\nGraphics quality: use Low if the game feels laggy.\nIt changes fully from the next match.\n\nLeft / right changes a setting.", 18, Color(1, 1, 1, 0.8))
 	pc.add_child(l)
 	_focus_first()
 
 
-const SETTING_NAMES := {"one_hand": "One-hand mode", "auto_switch": "Auto-switch player", "shapes": "Colour-blind team shapes",
+const SETTING_NAMES := {"show_fps": "Show FPS counter (F3)", "one_hand": "One-hand mode", "auto_switch": "Auto-switch player", "shapes": "Colour-blind team shapes",
 	"reduce_flash": "Reduce flashing (no blackout)", "shake": "Camera shake", "chase_cam": "Chase camera by default"}
 
 
@@ -575,6 +576,7 @@ func _setting_label(key: String) -> String:
 		"volume": return "Volume:  %d%%" % int(round(float(s["volume"]) * 100.0))
 		"difficulty": return "Difficulty:  " + ["Easy", "Normal", "Hard"][int(s["difficulty"])]
 		"team_size": return "Default team size:  %dv%d" % [int(s["team_size"]), int(s["team_size"])]
+		"quality": return "Graphics quality:  " + ["Low (smoothest)", "Medium", "High (best looking)"][int(s["quality"])]
 	return "%s:  %s" % [SETTING_NAMES[key], "ON" if s[key] else "OFF"]
 
 
@@ -588,4 +590,7 @@ func _setting_change(d: int, key: String) -> void:
 			Game.apply_volume()
 		"difficulty": s["difficulty"] = posmod(int(s["difficulty"]) + d, 3)
 		"team_size": s["team_size"] = posmod(int(s["team_size"]) - 2 + d, 3) + 2
+		"quality":
+			s["quality"] = posmod(int(s["quality"]) + d, 3)
+			Game.apply_quality()
 		_: s[key] = not s[key]

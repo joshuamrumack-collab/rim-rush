@@ -66,6 +66,9 @@ func build(arena_def: Dictionary, g, colors: Array) -> void:
 	_build_stands(colors)
 	_build_scoreboard()
 	_build_pinball(colors)
+	Mk.merge_static(self, [])
+	if Game.quality() == 0:
+		return
 	var probe := ReflectionProbe.new()
 	probe.size = Vector3(40, 14, 28)
 	probe.position = Vector3(0, 4, 0)
@@ -143,7 +146,7 @@ func _build_environment() -> void:
 
 	# Key light for crisp shadows (the sun on the rooftop).
 	var sun := DirectionalLight3D.new()
-	sun.shadow_enabled = true
+	sun.shadow_enabled = Game.quality() >= 1
 	sun.directional_shadow_max_distance = 60.0
 	if style == "rooftop":
 		sun.rotation_degrees = Vector3(-18, -60, 0)
@@ -165,7 +168,23 @@ func _fog(col: Color, density: float) -> void:
 	env.volumetric_fog_length = 80.0
 
 
+var _spot_count := 0
+
+
 func _spot(pos: Vector3, target: Vector3, col: Color, energy: float, angle: float, shadow: bool) -> SpotLight3D:
+	# Every light costs an extra drawing pass in the browser renderer, so
+	# lower qualities keep only a few lights and brighten the ambient instead.
+	var q := Game.quality()
+	var limit := 2 if q == 0 else (4 if q == 1 else 99)
+	if _spot_count >= limit:
+		env.ambient_light_energy += 0.04
+		_ambient_base = env.ambient_light_energy
+		return null
+	_spot_count += 1
+	if q < 2:
+		energy *= 1.6
+		angle = minf(angle * 1.4, 70.0)
+		shadow = false
 	var s := SpotLight3D.new()
 	s.light_color = col
 	s.light_energy = energy
@@ -308,12 +327,13 @@ func _build_goals(colors: Array) -> void:
 			_net(root, Vector3(sx * GOAL_DEPTH / 2.0, 0.8, sz * GOAL_HALF_W), Vector2(GOAL_DEPTH, 1.6), 0.0, Vector3.ZERO, nm, Vector2(6, 6))
 		_net(root, Vector3(sx * GOAL_DEPTH / 2.0, 1.6, 0), Vector2(GOAL_DEPTH, 2.0 * GOAL_HALF_W), 0.0, Vector3(PI / 2, 0, 0), nm, Vector2(6, 14))
 		# Goal light
-		var gl := OmniLight3D.new()
-		gl.light_color = col
-		gl.light_energy = 1.5
-		gl.omni_range = 4.0
-		gl.position = Vector3(sx * GOAL_DEPTH * 0.6, 1.0, 0)
-		root.add_child(gl)
+		if Game.quality() >= 2:
+			var gl := OmniLight3D.new()
+			gl.light_color = col
+			gl.light_energy = 1.5
+			gl.omni_range = 4.0
+			gl.position = Vector3(sx * GOAL_DEPTH * 0.6, 1.0, 0)
+			root.add_child(gl)
 		# Trigger, fully behind the goal line
 		var ash := BoxShape3D.new()
 		ash.size = Vector3(GOAL_DEPTH - 0.5, 2.5, 2.0 * GOAL_HALF_W)
@@ -375,8 +395,10 @@ func _build_stands(colors: Array) -> void:
 			for i in n:
 				if randf() < (0.15 if style != "retro" else 0.4):
 					continue
-				if OS.has_feature("web") and i % 2 == 1:
-					continue  # lighter crowd in the browser
+				if Game.quality() == 0 and i % 5 < 3:
+					continue  # smaller crowd on low quality
+				if Game.quality() == 1 and i % 3 == 1:
+					continue
 				var t: float = -sd["len"] / 2.0 + (i + 0.5) * (sd["len"] / n) + randf_range(-0.12, 0.12)
 				var p: Vector3 = center + along * t + Vector3(0, h + 0.42, 0)
 				var c: Color
@@ -557,7 +579,8 @@ func _build_neon() -> void:
 	for x in [-10.0, 0.0, 10.0]:
 		for z in [-5.0, 5.0]:
 			var s := _spot(Vector3(x, 12.0, z), Vector3(x * 0.5, 0, 0), pinks[k % pinks.size()], 3.0, 26.0, k < 2)
-			moving_lights.append([s, randf() * TAU, s.global_position])
+			if s:
+				moving_lights.append([s, randf() * TAU, s.global_position])
 			k += 1
 	for x in [-12.0, 12.0]:
 		_spot(Vector3(x, 12.0, 0), Vector3(x * 0.6, 0, 0), Color(0.9, 0.85, 1.0), 1.4, 45.0, true)

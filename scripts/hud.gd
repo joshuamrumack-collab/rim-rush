@@ -28,6 +28,7 @@ var _replay: Label
 var _objective: Label
 var _speed: Label
 var pause_toggle: Callable
+var _fps: Label
 
 
 func build(accent: Color) -> void:
@@ -162,6 +163,14 @@ func build(accent: Color) -> void:
 	hl.name = "Text"
 	_help.add_child(hl)
 	set_help_text(false)
+	_fps = UiTheme.label("", 18, Color(0.6, 1.0, 0.6))
+	_fps.anchor_left = 1.0
+	_fps.anchor_right = 1.0
+	_fps.anchor_top = 1.0
+	_fps.anchor_bottom = 1.0
+	_fps.offset_left = -140
+	_fps.offset_top = -40
+	root.add_child(_fps)
 
 
 func set_help_text(one_hand: bool) -> void:
@@ -246,6 +255,9 @@ func set_replay(on: bool) -> void:
 func _process(delta: float) -> void:
 	if Input.is_action_just_pressed("pause") and pause_toggle.is_valid():
 		pause_toggle.call()
+	if Input.is_action_just_pressed("fps"):
+		Game.settings["show_fps"] = not Game.settings["show_fps"]
+	_fps.text = ("%d FPS" % Engine.get_frames_per_second()) if Game.settings["show_fps"] else ""
 	if _banner_t > 0.0:
 		_banner_t -= delta
 		if _banner_t <= 0.0:

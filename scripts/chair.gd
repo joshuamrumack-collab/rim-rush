@@ -394,7 +394,7 @@ func _build_visual() -> void:
 			prev = p
 		Mk.tube(v, Vector3(side * fw / 2.0, frame_y, dz - gr), Vector3(gx, axle_y - 0.02, dz - gr), tube_r * 0.8, frame_m)
 		Mk.tube(v, Vector3(side * fw / 2.0, frame_y, dz + gr), Vector3(gx, axle_y - 0.02, dz + gr), tube_r * 0.8, frame_m)
-		var tr2: GPUParticles3D = game.fx.make_trail(hub, team_color, Vector3(side * 0.05, -0.1, 0.2), 0.09, 30, 0.35) if game and game.get("fx") else null
+		var tr2: GPUParticles3D = game.fx.make_trail(hub, team_color, Vector3(side * 0.05, -0.1, 0.2), 0.09, 30, 0.35) if game and game.get("fx") and Game.quality() >= 1 else null
 		if tr2:
 			_trails.append(tr2)
 
@@ -528,12 +528,13 @@ func _build_visual() -> void:
 	if role == "keeper":
 		Mk.box(t, Vector3(0.36, 0.28, 0.02), Vector3(0, 0.3, -0.17), Mk.mat(Color(0.2, 1.0, 0.4), 0.4))  # keeper bib
 
-	var light := OmniLight3D.new()
-	light.light_color = team_color
-	light.light_energy = 0.8
-	light.omni_range = 1.6
-	light.position = Vector3(0, FLOOR_Y + 0.12, 0)
-	v.add_child(light)
+	if Game.quality() >= 2:
+		var light := OmniLight3D.new()
+		light.light_color = team_color
+		light.light_energy = 0.8
+		light.omni_range = 1.6
+		light.position = Vector3(0, FLOOR_Y + 0.12, 0)
+		v.add_child(light)
 
 	# Controlled-player ring with a chevron that shows which way is forward
 	_ring = Node3D.new()
@@ -559,6 +560,21 @@ func _build_visual() -> void:
 		pr.mesh = pm
 		_marker.add_child(pr)
 	_marker.visible = was_marker or Game.settings["shapes"]
+
+	# Merge all the static parts into one mesh (animated parts stay separate).
+	var skip: Array = [_torso, _ring, _marker]
+	for w in _wheels:
+		skip.append((w[0] as Node3D).get_parent())
+	skip.append_array(_casters)
+	Mk.merge_static(v, skip)
+	# Each moving part is merged on its own, so it can still move.
+	for w in _wheels:
+		Mk.merge_static(w[0], [])
+	for c in _casters:
+		Mk.merge_static(c, [])
+	Mk.merge_static(_torso, [_head])
+	Mk.merge_static(_head, [])
+	Mk.merge_static(_ring, [])
 
 
 ## Swivel caster: vertical stem, fork, small wheel with an aluminium hub.

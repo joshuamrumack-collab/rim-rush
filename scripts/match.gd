@@ -75,6 +75,7 @@ var tdata := {}
 
 
 func _ready() -> void:
+	Game.apply_quality()
 	cfg = Game.match_config.duplicate(true)
 	if cfg.is_empty():
 		cfg = {"mode": "arcade", "arena": 1, "team_size": 3, "rules": "arcade", "opponent": randi() % Game.RIVALS.size(), "half_len": 120.0}
