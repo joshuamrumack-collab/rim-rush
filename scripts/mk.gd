@@ -154,13 +154,13 @@ static func merge_static(root: Node3D, skip: Array) -> void:
 	if to_free.size() < 2:
 		return
 	var am := ArrayMesh.new()
-	for mat in groups:
+	for surf_mat in groups:
 		var st := SurfaceTool.new()
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)
-		for e in groups[mat]:
+		for e in groups[surf_mat]:
 			st.append_from(e[0], 0, e[1])
 		st.commit(am)
-		am.surface_set_material(am.get_surface_count() - 1, mat)
+		am.surface_set_material(am.get_surface_count() - 1, surf_mat)
 	var mi := MeshInstance3D.new()
 	mi.name = "Merged"
 	mi.mesh = am
@@ -178,14 +178,14 @@ static func _collect(node: Node, xf: Transform3D, skip: Array, groups: Dictionar
 			var mi := c as MeshInstance3D
 			if mi.mesh == null or mi.mesh.get_surface_count() != 1 or mi.get_child_count() > 0:
 				continue
-			var mat: Material = mi.material_override if mi.material_override else mi.mesh.surface_get_material(0)
-			if mat == null:
+			var m: Material = mi.material_override if mi.material_override else mi.mesh.surface_get_material(0)
+			if m == null:
 				continue
-			if mat is BaseMaterial3D and (mat as BaseMaterial3D).transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
+			if m is BaseMaterial3D and (m as BaseMaterial3D).transparency != BaseMaterial3D.TRANSPARENCY_DISABLED:
 				continue
-			if not groups.has(mat):
-				groups[mat] = []
-			groups[mat].append([mi.mesh, xf * mi.transform])
+			if not groups.has(m):
+				groups[m] = []
+			groups[m].append([mi.mesh, xf * mi.transform])
 			to_free.append(mi)
 		elif c.get_class() == "Node3D":
 			_collect(c, xf * (c as Node3D).transform, skip, groups, to_free)
